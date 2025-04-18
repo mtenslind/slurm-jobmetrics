@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"os/user"
 	"strconv"
+	"strings"
+
+	// "log"
+	// "time"
+	"os"
 )
 
 type JobInfo struct {
@@ -19,9 +24,36 @@ func SetJobInfo(jobid int) JobInfo {
 	return JobInfo{jobid, gotid, gotname}
 }
 
-func main() {
+func FindJobs(cgroupPath string) []JobInfo {
+	path, err := os.OpenRoot(cgroupPath)
+	defer path.Close()
+	if err != nil {
+		panic(err)
+	}
+	rootfile, err := path.Open("./")
+	if err != nil {
+		panic(err)
+	}
+	files, err := rootfile.ReadDir(0)
+	if err != nil {
+		panic(err)
+	}
+	var jobs []JobInfo
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), "job_") {
+			jobstring, _ := strings.CutPrefix(file.Name(), "job_")
+			jobid, _ := strconv.Atoi(jobstring)
+			jobs = append(jobs, SetJobInfo(jobid))
+		}
+	}
+	return jobs
+}
 
-	job := SetJobInfo(66)
-	fmt.Printf("Uid %d\n", job.userId)
-	fmt.Printf("Username %q\n", job.userName)
+func main() {
+	jobs := FindJobs("/sys/fs/cgroup/system.slice/slurmstepd.scope/")
+
+	for _, job := range jobs {
+		fmt.Printf("Job id: %d | User name: %s\n", job.jobId, job.userName)
+	}
+
 }
