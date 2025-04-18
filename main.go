@@ -11,7 +11,6 @@ import (
 const cgroupRoot = "/sys/fs/cgroup/system.slice/slurmstepd.scope/"
 
 type JobInfo struct {
-	jobID    int
 	userId   int
 	userName string
 }
@@ -20,7 +19,7 @@ func SetJobInfo(jobid int) JobInfo {
 	gotid := GetJobUid(jobid)
 	userinfo, _ := user.LookupId(strconv.Itoa(gotid))
 	gotname := userinfo.Username
-	return JobInfo{jobid, gotid, gotname}
+	return JobInfo{gotid, gotname}
 }
 
 func FindJobs(jobInfoMap map[int]JobInfo) {
