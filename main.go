@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/user"
 	"strconv"
 	"strings"
-
-	// "log"
-	// "time"
-	"os"
 )
 
+const cgroupRoot = "/sys/fs/cgroup/system.slice/slurmstepd.scope/"
+
 type JobInfo struct {
-	jobId    int
+	jobID    int
 	userId   int
 	userName string
 }
@@ -24,8 +23,8 @@ func SetJobInfo(jobid int) JobInfo {
 	return JobInfo{jobid, gotid, gotname}
 }
 
-func FindJobs(cgroupPath string) []JobInfo {
-	path, err := os.OpenRoot(cgroupPath)
+func FindJobs(jobInfoMap map[int]JobInfo) {
+	path, err := os.OpenRoot(cgroupRoot)
 	defer path.Close()
 	if err != nil {
 		panic(err)
@@ -38,22 +37,23 @@ func FindJobs(cgroupPath string) []JobInfo {
 	if err != nil {
 		panic(err)
 	}
-	var jobs []JobInfo
 	for _, file := range files {
 		if strings.HasPrefix(file.Name(), "job_") {
 			jobstring, _ := strings.CutPrefix(file.Name(), "job_")
 			jobid, _ := strconv.Atoi(jobstring)
-			jobs = append(jobs, SetJobInfo(jobid))
+			jobInfoMap[jobid] = SetJobInfo(jobid)
+
 		}
 	}
-	return jobs
 }
 
 func main() {
-	jobs := FindJobs("/sys/fs/cgroup/system.slice/slurmstepd.scope/")
 
-	for _, job := range jobs {
-		fmt.Printf("Job id: %d | User name: %s\n", job.jobId, job.userName)
+	jobMap := make(map[int]JobInfo)
+	FindJobs(jobMap)
+
+	for jobID, jobinfo := range jobMap {
+		fmt.Printf("Job id: %d | User name: %s\n", jobID, jobinfo.userName)
 	}
 
 }
