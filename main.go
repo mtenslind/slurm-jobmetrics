@@ -19,6 +19,8 @@ type JobInfo struct {
 }
 
 func GetUserInfo(jobID int) (int, string) {
+	// GetJobUid function calls a CGO function that uses slurm.h
+	// Uses an RPC call to the Slurm controller to retreive the jobs' user based on Job ID
 	uid := GetJobUid(jobID)
 	userinfo, err := user.LookupId(strconv.Itoa(uid))
 	if err != nil {
@@ -28,6 +30,7 @@ func GetUserInfo(jobID int) (int, string) {
 }
 
 func GetStats(root *os.Root, name string) string {
+	// Takes the CGroup root and parses relevant files for information
 	mem, err := root.Open(name + "/memory.current")
 	defer mem.Close()
 	if err != nil {
@@ -59,11 +62,14 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 		if strings.HasPrefix(file.Name(), "job_") {
 			jobstring, _ := strings.CutPrefix(file.Name(), "job_")
 			jobid, _ := strconv.Atoi(jobstring)
+			// Check if the job already exists
+			// Fetches user info from the controller if not
 			if _, ok := jobInfoMap[jobid]; !ok {
 				userID, userName := GetUserInfo(jobid)
 				path := cgroupRoot + file.Name()
 				jobInfoMap[jobid] = JobInfo{userID, userName, path, ""}
 			}
+			// Set jobinfo to the created struct
 			jobinfo := jobInfoMap[jobid]
 			jobinfo.memory = GetStats(path, file.Name())
 			jobInfoMap[jobid] = jobinfo
