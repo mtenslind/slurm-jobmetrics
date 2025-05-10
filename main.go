@@ -15,17 +15,22 @@ type JobInfo struct {
 	userId     int
 	userName   string
 	cgroupPath string
-	memory     string
+	stats      JobStats
+}
+
+type JobStats struct {
+	memory string
 }
 
 // Job struct builder with empty stats
 func NewJobStruct(jobId int, path string) JobInfo {
 	var jobinfo JobInfo
+	var stats JobStats
 	userId, userName := GetUserInfo(jobId)
 	jobinfo.userId = userId
 	jobinfo.userName = userName
 	jobinfo.cgroupPath = path
-	jobinfo.memory = ""
+	jobinfo.stats = stats
 	return jobinfo
 
 }
@@ -82,7 +87,7 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 			}
 			// Set jobinfo to the created struct
 			jobinfo := jobInfoMap[jobid]
-			jobinfo.memory = GetStats(path, file.Name())
+			jobinfo.stats.memory = GetStats(path, file.Name())
 			jobInfoMap[jobid] = jobinfo
 		}
 	}
@@ -94,7 +99,7 @@ func main() {
 	FindJobs(jobMap)
 
 	for jobID, jobinfo := range jobMap {
-		fmt.Printf("Job id: %d | User name: %s | Memory: %s | path: %s\n", jobID, jobinfo.userName, jobinfo.memory, jobinfo.cgroupPath)
+		fmt.Printf("Job id: %d | User name: %s | Memory: %s | path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memory, jobinfo.cgroupPath)
 	}
 
 }
