@@ -46,8 +46,9 @@ func GetUserInfo(jobID int) (int, string) {
 	return uid, userinfo.Username
 }
 
-func GetStats(root *os.Root, name string) string {
+func GetStats(root *os.Root, name string) JobStats {
 	// Takes the CGroup root and parses relevant files for information
+	var stats JobStats
 	mem, err := root.Open(name + "/memory.current")
 	defer mem.Close()
 	if err != nil {
@@ -58,7 +59,8 @@ func GetStats(root *os.Root, name string) string {
 	if err != nil {
 		panic(err)
 	}
-	return string(content)
+	stats.memory = string(content)
+	return stats
 
 }
 func FindJobs(jobInfoMap map[int]JobInfo) {
@@ -87,7 +89,7 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 			}
 			// Set jobinfo to the created struct
 			jobinfo := jobInfoMap[jobid]
-			jobinfo.stats.memory = GetStats(path, file.Name())
+			jobinfo.stats = GetStats(path, file.Name())
 			jobInfoMap[jobid] = jobinfo
 		}
 	}
