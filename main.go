@@ -34,7 +34,7 @@ func NewJobStruct(path string, jobId int) JobInfo {
 	jobinfo.jobId = jobId
 	jobinfo.userId = userId
 	jobinfo.userName = userName
-	jobinfo.cgroupPath = path
+	jobinfo.cgroupPath = cgroupRoot + path
 	jobinfo.stats = stats
 	return jobinfo
 
@@ -80,6 +80,7 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 		panic(err)
 	}
 	rootfile, err := path.Open("./")
+	defer rootfile.Close()
 	if err != nil {
 		panic(err)
 	}
