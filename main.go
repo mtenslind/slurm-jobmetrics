@@ -49,17 +49,17 @@ func GetUserInfo(jobID int) (int, string) {
 func GetStats(root *os.Root, name string) JobStats {
 	// Takes the CGroup root and parses relevant files for information
 	var stats JobStats
-	mem, err := root.Open(name + "/memory.current")
-	defer mem.Close()
+	memFile, err := root.Open(name + "/memory.current")
+	defer memFile.Close()
 	if err != nil {
 		panic(err)
 	}
 
-	content, err := ioutil.ReadAll(mem)
+	memValue, err := ioutil.ReadAll(memFile)
 	if err != nil {
 		panic(err)
 	}
-	stats.memory = string(content)
+	stats.memory = string(memValue)
 	return stats
 
 }
