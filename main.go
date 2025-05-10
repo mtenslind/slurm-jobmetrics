@@ -46,23 +46,28 @@ func GetUserInfo(jobID int) (int, string) {
 	return uid, userinfo.Username
 }
 
-func GetStats(root *os.Root, name string) JobStats {
+func GetStats(root *os.Root, cgroupPath string) JobStats {
 	// Takes the CGroup root and parses relevant files for information
 	var stats JobStats
-	memFile, err := root.Open(name + "/memory.current")
-	defer memFile.Close()
-	if err != nil {
-		panic(err)
-	}
-
-	memValue, err := ioutil.ReadAll(memFile)
-	if err != nil {
-		panic(err)
-	}
-	stats.memory = string(memValue)
+	stats.memory = ReadStatFromFile(root, cgroupPath, "/memory.current")
 	return stats
 
 }
+
+func ReadStatFromFile(root *os.Root, cgroupPath string, fileName string) string {
+	file, err := root.Open(cgroupPath + fileName)
+	defer file.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	statValue, err := ioutil.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	return string(statValue)
+}
+
 func FindJobs(jobInfoMap map[int]JobInfo) {
 	path, err := os.OpenRoot(cgroupRoot)
 	defer path.Close()
