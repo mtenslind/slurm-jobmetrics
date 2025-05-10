@@ -18,6 +18,18 @@ type JobInfo struct {
 	memory     string
 }
 
+// Job struct builder with empty stats
+func NewJobStruct(jobId int, path string) JobInfo {
+	var jobinfo JobInfo
+	userId, userName := GetUserInfo(jobId)
+	jobinfo.userId = userId
+	jobinfo.userName = userName
+	jobinfo.cgroupPath = path
+	jobinfo.memory = ""
+	return jobinfo
+
+}
+
 func GetUserInfo(jobID int) (int, string) {
 	// GetJobUid function calls a CGO function that uses slurm.h
 	// Uses an RPC call to the Slurm controller to retreive the jobs' user based on Job ID
@@ -63,11 +75,10 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 			jobstring, _ := strings.CutPrefix(file.Name(), "job_")
 			jobid, _ := strconv.Atoi(jobstring)
 			// Check if the job already exists
-			// Fetches user info from the controller if not
+			// Initializes job with empty stats if not
 			if _, ok := jobInfoMap[jobid]; !ok {
-				userID, userName := GetUserInfo(jobid)
 				path := cgroupRoot + file.Name()
-				jobInfoMap[jobid] = JobInfo{userID, userName, path, ""}
+				jobInfoMap[jobid] = NewJobStruct(jobid, path)
 			}
 			// Set jobinfo to the created struct
 			jobinfo := jobInfoMap[jobid]
