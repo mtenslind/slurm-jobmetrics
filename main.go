@@ -12,10 +12,12 @@ import (
 const cgroupRoot = "/sys/fs/cgroup/system.slice/slurmstepd.scope/"
 
 type JobInfo struct {
-	userId     int
-	userName   string
-	cgroupPath string
-	stats      JobStats
+	jobId          int
+	userId         int
+	userName       string
+	cgroupPath     string
+	fileDescriptor os.File
+	stats          JobStats
 }
 
 type JobStats struct {
@@ -23,10 +25,13 @@ type JobStats struct {
 }
 
 // Job struct builder with empty stats
-func NewJobStruct(jobId int, path string) JobInfo {
+func NewJobStruct(path string, jobId int) JobInfo {
 	var jobinfo JobInfo
 	var stats JobStats
+
 	userId, userName := GetUserInfo(jobId)
+
+	jobinfo.jobId = jobId
 	jobinfo.userId = userId
 	jobinfo.userName = userName
 	jobinfo.cgroupPath = path
@@ -49,13 +54,13 @@ func GetUserInfo(jobID int) (int, string) {
 func GetStats(root *os.Root, cgroupPath string) JobStats {
 	// Takes the CGroup root and parses relevant files for information
 	var stats JobStats
-	stats.memory = ReadStatFromFile(root, cgroupPath, "/memory.current")
+	stats.memory = ReadStatFromFile(root, "memory.current")
 	return stats
 
 }
 
-func ReadStatFromFile(root *os.Root, cgroupPath string, fileName string) string {
-	file, err := root.Open(cgroupPath + fileName)
+func ReadStatFromFile(cgroupFile *os.Root, fileName string) string {
+	file, err := cgroupFile.Open(fileName)
 	defer file.Close()
 	if err != nil {
 		panic(err)
@@ -84,17 +89,20 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 	}
 	for _, file := range files {
 		if strings.HasPrefix(file.Name(), "job_") {
+			fileDescriptor, err := path.OpenRoot(file.Name())
+			if err != nil {
+				panic(err)
+			}
 			jobstring, _ := strings.CutPrefix(file.Name(), "job_")
 			jobid, _ := strconv.Atoi(jobstring)
 			// Check if the job already exists
 			// Initializes job with empty stats if not
 			if _, ok := jobInfoMap[jobid]; !ok {
-				path := cgroupRoot + file.Name()
-				jobInfoMap[jobid] = NewJobStruct(jobid, path)
+				jobInfoMap[jobid] = NewJobStruct(fileDescriptor.Name(), jobid)
 			}
 			// Set jobinfo to the created struct
 			jobinfo := jobInfoMap[jobid]
-			jobinfo.stats = GetStats(path, file.Name())
+			jobinfo.stats = GetStats(fileDescriptor, file.Name())
 			jobInfoMap[jobid] = jobinfo
 		}
 	}
