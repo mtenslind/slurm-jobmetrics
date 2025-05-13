@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const cgroupRoot = "/sys/fs/cgroup/system.slice/slurmstepd.scope/"
@@ -138,14 +139,23 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 	}
 }
 
-func main() {
-
-	jobMap := make(map[int]JobInfo)
-	FindJobs(jobMap)
-
+func PrintJobs(jobMap map[int]JobInfo) {
 	for jobID, jobinfo := range jobMap {
 		fmt.Printf("Job id: %d | User name: %s | Memory: %s | Cpus: %d \n path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memoryCurrent, jobinfo.stats.cpuCount, jobinfo.cgroupPath)
 		fmt.Printf("jobstat: %s\n", jobinfo.stats.cpuStat)
 	}
 
+}
+
+func main() {
+	jobMap := make(map[int]JobInfo)
+
+	interval := time.Duration(1) * time.Second
+	tk := time.NewTicker(interval)
+
+	for range tk.C {
+		FindJobs(jobMap)
+		PrintJobs(jobMap)
+
+	}
 }
