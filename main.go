@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -21,7 +22,8 @@ type JobInfo struct {
 }
 
 type JobStats struct {
-	memory string
+	memory   string
+	cpuCount int
 }
 
 // Job struct builder with empty stats
@@ -55,6 +57,7 @@ func GetStats(root *os.Root, cgroupPath string) JobStats {
 	// Takes the CGroup root and parses relevant files for information
 	var stats JobStats
 	stats.memory = ReadStatFromFile(root, "memory.current")
+	stats.cpuCount = CalculateCpuCount(ReadStatFromFile(root, "cpuset.cpus"))
 	return stats
 
 }
@@ -73,6 +76,23 @@ func ReadStatFromFile(cgroupFile *os.Root, fileName string) string {
 	return string(statValue)
 }
 
+func CalculateCpuCount(input string) int {
+	// Split input via commas
+	segments := strings.Split(input, ",")
+
+	// Compile regex pattern for ranges
+	pattern := regexp.MustCompile(`(\d+)-(\d+)`)
+
+	count := 0
+	for _, section := range segments {
+		if match := pattern.FindStringSubmatch(section); match != nil {
+			start, _ := strconv.Atoi(match[1])
+			end, _ := strconv.Atoi(match[2])
+			count += (end - start + 1)
+		}
+	}
+	return count
+}
 func FindJobs(jobInfoMap map[int]JobInfo) {
 	path, err := os.OpenRoot(cgroupRoot)
 	defer path.Close()
@@ -115,7 +135,7 @@ func main() {
 	FindJobs(jobMap)
 
 	for jobID, jobinfo := range jobMap {
-		fmt.Printf("Job id: %d | User name: %s | Memory: %s | path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memory, jobinfo.cgroupPath)
+		fmt.Printf("Job id: %d | User name: %s | Memory: %s | Cpus: %d \n path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memory, jobinfo.stats.cpuCount, jobinfo.cgroupPath)
 	}
 
 }
