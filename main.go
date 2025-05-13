@@ -81,14 +81,18 @@ func CalculateCpuCount(input string) int {
 	segments := strings.Split(input, ",")
 
 	// Compile regex pattern for ranges
-	pattern := regexp.MustCompile(`(\d+)-(\d+)`)
+	pattern := regexp.MustCompile(`^(\d+)-(\d+)$`)
 
 	count := 0
 	for _, section := range segments {
+		section = strings.TrimSpace(section)
+		// check if a section is a range
 		if match := pattern.FindStringSubmatch(section); match != nil {
 			start, _ := strconv.Atoi(match[1])
 			end, _ := strconv.Atoi(match[2])
 			count += (end - start + 1)
+		} else if _, err := strconv.Atoi(section); err == nil {
+			count++
 		}
 	}
 	return count
