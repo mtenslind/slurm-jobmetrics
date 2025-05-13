@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"regexp"
@@ -24,6 +24,7 @@ type JobInfo struct {
 type JobStats struct {
 	memory   string
 	cpuCount int
+	cpuStat  string
 }
 
 // Job struct builder with empty stats
@@ -58,6 +59,7 @@ func GetStats(root *os.Root, cgroupPath string) JobStats {
 	var stats JobStats
 	stats.memory = ReadStatFromFile(root, "memory.current")
 	stats.cpuCount = CalculateCpuCount(ReadStatFromFile(root, "cpuset.cpus"))
+	stats.cpuStat = strings.Split(ReadStatFromFile(root, "cpu.stat"), " ")[1]
 	return stats
 
 }
@@ -69,11 +71,12 @@ func ReadStatFromFile(cgroupFile *os.Root, fileName string) string {
 		panic(err)
 	}
 
-	statValue, err := ioutil.ReadAll(file)
-	if err != nil {
-		panic(err)
+	scanner := bufio.NewScanner(file)
+	if scanner.Scan() {
+		return scanner.Text()
 	}
-	return string(statValue)
+	return ""
+
 }
 
 func CalculateCpuCount(input string) int {
@@ -140,6 +143,7 @@ func main() {
 
 	for jobID, jobinfo := range jobMap {
 		fmt.Printf("Job id: %d | User name: %s | Memory: %s | Cpus: %d \n path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memory, jobinfo.stats.cpuCount, jobinfo.cgroupPath)
+		fmt.Printf("jobstat: %s\n", jobinfo.stats.cpuStat)
 	}
 
 }
