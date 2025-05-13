@@ -22,9 +22,10 @@ type JobInfo struct {
 }
 
 type JobStats struct {
-	memory   string
-	cpuCount int
-	cpuStat  string
+	memoryMax     string
+	memoryCurrent string
+	cpuCount      int
+	cpuStat       string
 }
 
 // Job struct builder with empty stats
@@ -57,7 +58,8 @@ func GetUserInfo(jobID int) (int, string) {
 func GetStats(root *os.Root, cgroupPath string) JobStats {
 	// Takes the CGroup root and parses relevant files for information
 	var stats JobStats
-	stats.memory = ReadStatFromFile(root, "memory.current")
+	stats.memoryMax = ReadStatFromFile(root, "memory.max")
+	stats.memoryCurrent = ReadStatFromFile(root, "memory.current")
 	stats.cpuCount = CalculateCpuCount(ReadStatFromFile(root, "cpuset.cpus"))
 	stats.cpuStat = strings.Split(ReadStatFromFile(root, "cpu.stat"), " ")[1]
 	return stats
@@ -142,7 +144,7 @@ func main() {
 	FindJobs(jobMap)
 
 	for jobID, jobinfo := range jobMap {
-		fmt.Printf("Job id: %d | User name: %s | Memory: %s | Cpus: %d \n path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memory, jobinfo.stats.cpuCount, jobinfo.cgroupPath)
+		fmt.Printf("Job id: %d | User name: %s | Memory: %s | Cpus: %d \n path: %s\n", jobID, jobinfo.userName, jobinfo.stats.memoryCurrent, jobinfo.stats.cpuCount, jobinfo.cgroupPath)
 		fmt.Printf("jobstat: %s\n", jobinfo.stats.cpuStat)
 	}
 
