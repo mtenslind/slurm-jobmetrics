@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	"log"
 	"os"
 	"os/user"
 	"regexp"
@@ -142,8 +142,15 @@ func FindJobs(jobInfoMap map[int]JobInfo) {
 }
 
 func PrintJobs(jobMap map[int]JobInfo) {
+	fileName := "logfile.log"
+	logFile, err := os.OpenFile(fileName, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
 	for jobID, jobinfo := range jobMap {
-		fmt.Printf("Job_ID=%d;User=%s;User_ID=%d;MemReq=%s;MemUsed=%s;CpuReq=%d;CpuStat=%s\n", jobID, jobinfo.userName, jobinfo.userId, jobinfo.stats.memoryMax, jobinfo.stats.memoryCurrent, jobinfo.stats.cpuCount, jobinfo.stats.cpuStat)
+		log.Printf("Job_ID=%d;User=%s;User_ID=%d;MemReq=%s;MemUsed=%s;CpuReq=%d;CpuStat=%s\n", jobID, jobinfo.userName, jobinfo.userId, jobinfo.stats.memoryMax, jobinfo.stats.memoryCurrent, jobinfo.stats.cpuCount, jobinfo.stats.cpuStat)
 	}
 
 }
