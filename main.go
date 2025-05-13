@@ -13,7 +13,7 @@ import (
 
 const cgroupRoot = "/sys/fs/cgroup/system.slice/slurmstepd.scope/"
 
-const interval = time.Duration(1) * time.Second
+const interval = time.Duration(30) * time.Second
 
 type JobInfo struct {
 	jobId          int
